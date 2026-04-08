@@ -2,6 +2,8 @@
 
 A CRNN that solves the Ikariam pirate fortress captcha.
 
+![Sample captcha: b45d5eee](data/samples/test1.png)
+
 | Model | Params | Original val | Corrected val |
 |---|---|---|---|
 | YOLOv8n (IkabotAPI baseline) | ~3 M | 78.7% | 81.2% |
@@ -21,47 +23,48 @@ data/samples/test1.png: b45d5eee  (conf=0.993)
 data/samples/test2.png: aqrckd3   (conf=0.995)
 ```
 
-`scripts/predict_onnx.py` depends only on `onnxruntime`, `Pillow`, and `numpy` — no PyTorch needed at inference time. Use it as the reference implementation when porting to other runtimes (browser via `onnxruntime-web`, mobile, OpenCV's `cv2.dnn`, etc).
+`scripts/predict_onnx.py` depends only on `onnxruntime`, `Pillow`, and `numpy` — no PyTorch needed at inference time.
 
-## Character set
+## Python API
 
-The captcha uses **only 28 characters**, not 36. The game server excludes visually ambiguous ones:
+Minimal standalone inference — no `ikaptcha` package required:
 
+```python
+import numpy as np
+import onnxruntime as ort
+from PIL import Image
+
+VOCAB = "-abcdefghjklmnpqrstuvwxy23457"  # index 0 is the CTC blank
+
+# 1. Preprocess: 48x256 RGB, normalized to [-1, 1], NCHW float32
+img = Image.open("data/samples/test1.png").convert("RGB").resize((256, 48), Image.BILINEAR)
+x = (np.asarray(img, dtype=np.float32) / 255.0 - 0.5) / 0.5
+x = x.transpose(2, 0, 1)[None, ...]  # (1, 3, 48, 256)
+
+# 2. Inference
+session = ort.InferenceSession("models/crnn.onnx")
+logits = session.run(None, {"input": x})[0]  # (64, 1, 29)
+
+# 3. Greedy CTC decode: argmax, collapse repeats, drop blanks
+ids = logits.argmax(axis=2)[:, 0]
+out = "".join(VOCAB[i] for j, i in enumerate(ids)
+              if i != 0 and (j == 0 or i != ids[j-1]))
+print(out)  # "b45d5eee"
 ```
-Letters (24): A B C D E F G H J K L M N P Q R S T U V W X Y
-Digits  (4):  2 3 4 5 7
-Excluded:     0 1 6 8 9 I O Z
-```
 
-## Repo layout
+> Vocab note: 28 characters, not 36. The game server excludes `0 1 6 8 9 I O Z` as visually ambiguous.
 
-```
-ikaptcha/                        importable package (CRNN, charset, decoders, transforms)
-scripts/                         entry-point scripts
-├── predict.py predict_onnx.py   single-image inference (PyTorch / ONNX)
-├── train.py                     two-phase training
-├── export_onnx.py               PyTorch -> ONNX with parity verification
-├── eval_compare.py              eval against both val sets
-├── eval_yolo.py                 YOLO baseline
-├── generate_captcha.py          synthetic captcha generator
-├── generate_dataset.py          multiprocess synthetic dataset builder
-├── fetch_captchas.py            real captcha fetcher
-├── pseudo_label.py              confidence-scored auto-labeling
-├── prepare_pseudo_train_v2.py   builds the production dataset
-└── kfold_validate.py            label-quality cross-validation
-data/
-├── samples/                     9 hand-labeled test images
-├── ikariam_pirate_captcha_dataset/   original 1,200/300 YOLO dataset
-└── dataset_pseudo_v2/           production 11,210/298 train/val
-models/
-├── crnn.onnx                    production ONNX (ship this)
-├── final_mixed.pth              same weights, PyTorch format
-└── yolov8n-...onnx              YOLO baseline for comparison
-fonts/                           ~120 .ttf files for synthetic generation
-```
+## Model I/O
+
+For porting to other runtimes (`onnxruntime-web`, `cv2.dnn`, mobile, C++):
+
+- **Input**: `(1, 3, 48, 256)` float32 — RGB, normalized with mean=0.5, std=0.5 (i.e. `(pixel/255 - 0.5) / 0.5`, giving values in `[-1, 1]`)
+- **Output**: `(64, 1, 29)` float32 logits — 64 timesteps × (28 characters + CTC blank at index 0)
+- **Decode**: greedy CTC — argmax per timestep, collapse consecutive duplicates, drop blanks
+- **Runtime compatibility**: verified on `onnxruntime`, `cv2.dnn` (≥ 4.8.0), and PyTorch — bit-identical predictions across all three
 
 ## Credits
 
-YOLOv8n baseline and the original 1,500-sample dataset are from [IkabotAPI](https://github.com/Ikabot-Collective/IkabotAPI).
+YOLOv8n baseline and the original 1,500-sample dataset are from [IkabotAPI](https://github.com/Ikabot-Collective/IkabotAPI). The upstream PR integrating this model back into IkabotAPI: [Ikabot-Collective/IkabotAPI#37](https://github.com/Ikabot-Collective/IkabotAPI/pull/37).
 
 Full technical writeup, ablations, and "what didn't work" notes: see `FINDINGS.md`.
