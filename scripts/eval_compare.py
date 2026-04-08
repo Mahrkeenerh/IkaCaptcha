@@ -3,7 +3,7 @@ Evaluate a checkpoint on both the original YOLO val set and our corrected
 val set.
 
 Usage:
-    python scripts/eval_compare.py [--checkpoint models/final_mixed.pth]
+    python scripts/eval_compare.py [--checkpoint models/ikaptcha.pth]
 """
 
 import argparse
@@ -54,7 +54,7 @@ def evaluate(model, samples):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--checkpoint", default="models/final_mixed.pth")
+    parser.add_argument("--checkpoint", default="models/ikaptcha.pth")
     args = parser.parse_args()
 
     original = load_val(

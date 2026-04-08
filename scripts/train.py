@@ -358,9 +358,9 @@ def run_mixed(model, config, train_tf, val_tf):
               f"train={train_loss:.4f}  val={val_loss:.4f}  "
               f"seq_acc={seq_acc:.1%}  cer={cer:.4f}  lr={lr_now:.1e}{tag}")
 
-    torch.save(model.state_dict(), MODELS_DIR / "final_mixed.pth")
+    torch.save(model.state_dict(), MODELS_DIR / "ikaptcha.pth")
     print(f"\n  Best mixed accuracy: {best_seq_acc:.1%}")
-    print(f"  Final-epoch accuracy: {seq_acc:.1%}  (saved as models/final_mixed.pth)")
+    print(f"  Final-epoch accuracy: {seq_acc:.1%}  (saved as models/ikaptcha.pth)")
     return best_seq_acc
 
 
@@ -395,7 +395,7 @@ def main():
         elif phase == "mixed":
             run_mixed(model, config, train_tf, val_tf)
 
-    print("\nDone! Production model saved as models/final_mixed.pth")
+    print("\nDone! Production model saved as models/ikaptcha.pth")
 
 
 if __name__ == "__main__":

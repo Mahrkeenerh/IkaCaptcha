@@ -6,7 +6,7 @@ Confidence is the mean softmax probability at each non-blank CTC timestep
 along the greedy-decoded path.
 
 Usage:
-    python scripts/pseudo_label.py [--checkpoint models/final_mixed.pth] [--batch-size 64]
+    python scripts/pseudo_label.py [--checkpoint models/ikaptcha.pth] [--batch-size 64]
 """
 
 import argparse
@@ -83,7 +83,7 @@ def load_batch(paths):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--checkpoint", default="models/final_mixed.pth")
+    parser.add_argument("--checkpoint", default="models/ikaptcha.pth")
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--output", default="pseudo_labels.csv")
     parser.add_argument("--input-dirs", nargs="+",

@@ -6,7 +6,7 @@ and matches the production ONNX file we ship.
 
 Usage:
     python scripts/predict.py data/samples/test1.png data/samples/test2.png
-    python scripts/predict.py --model models/final_mixed.pth data/samples/*.png
+    python scripts/predict.py --model models/ikaptcha.pth data/samples/*.png
 """
 
 import argparse
@@ -38,7 +38,7 @@ def predict(model, image_path: str) -> tuple[str, float]:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="models/final_mixed.pth")
+    parser.add_argument("--model", default="models/ikaptcha.pth")
     parser.add_argument("images", nargs="+")
     args = parser.parse_args()
 

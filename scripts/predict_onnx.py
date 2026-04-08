@@ -7,7 +7,7 @@ onnxruntime-web, mobile, etc).
 
 Usage:
     python scripts/predict_onnx.py data/samples/test1.png data/samples/test2.png
-    python scripts/predict_onnx.py --model models/crnn.onnx data/samples/*.png
+    python scripts/predict_onnx.py --model models/ikaptcha.onnx data/samples/*.png
 """
 
 import argparse
@@ -34,7 +34,7 @@ def confidence(logits_tbc: np.ndarray) -> float:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="models/crnn.onnx")
+    parser.add_argument("--model", default="models/ikaptcha.onnx")
     parser.add_argument("images", nargs="+")
     args = parser.parse_args()
 

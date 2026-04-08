@@ -104,8 +104,8 @@ Model confidence on these is high (confidently wrong), suggesting they're either
 
 ## Production Model
 
-- **PyTorch**: `models/final_mixed.pth` — CRNN class in `ikaptcha/model.py` with `hidden_size=128`
-- **ONNX**: `models/crnn.onnx` — exported via `scripts/export_onnx.py`, 6.4 MB, opset 18
+- **PyTorch**: `models/ikaptcha.pth` — CRNN class in `ikaptcha/model.py` with `hidden_size=128`
+- **ONNX**: `models/ikaptcha.onnx` — exported via `scripts/export_onnx.py`, 6.4 MB, opset 18
 - **Input**: 48×256 RGB, normalized with mean/std [0.5, 0.5, 0.5]
 - **Output**: T=64 timesteps × 29 classes (greedy CTC decode)
 - **Inference**: `scripts/predict.py` (PyTorch) or `scripts/predict_onnx.py` (ONNX, no torch dep)
@@ -113,7 +113,7 @@ Model confidence on these is high (confidently wrong), suggesting they're either
 
 ### ONNX Export & Parity
 
-`scripts/export_onnx.py` exports `models/final_mixed.pth` to `models/crnn.onnx` and verifies prediction parity against PyTorch on both validation sets. Result on all validation samples: **0 string mismatches, identical 95.0% / 97.3% accuracy**.
+`scripts/export_onnx.py` exports `models/ikaptcha.pth` to `models/ikaptcha.onnx` and verifies prediction parity against PyTorch on both validation sets. Result on all validation samples: **0 string mismatches, identical 95.0% / 97.3% accuracy**.
 
 Two non-obvious export details (both handled in the script):
 1. The model's `AdaptiveAvgPool2d((1, None))` is rejected by the legacy ONNX exporter (output_size contains None). Swapped for a fixed `AvgPool2d((3, 1))` since H=3 at that stage — verified mathematically equivalent.

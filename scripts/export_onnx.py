@@ -2,7 +2,7 @@
 Export the production CRNN to ONNX and verify parity vs PyTorch.
 
 Outputs:
-    models/crnn.onnx — portable model (loadable by onnxruntime, cv2.dnn,
+    models/ikaptcha.onnx — portable model (loadable by onnxruntime, cv2.dnn,
     onnxruntime-web, etc.)
 
 Verification:
@@ -11,7 +11,7 @@ Verification:
 
 Usage:
     python scripts/export_onnx.py
-    python scripts/export_onnx.py --checkpoint models/final_mixed.pth --output models/crnn.onnx
+    python scripts/export_onnx.py --checkpoint models/ikaptcha.pth --output models/ikaptcha.onnx
 """
 
 import argparse
@@ -136,8 +136,8 @@ def evaluate(samples, model, session, name, batch_size=32):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--checkpoint", default="models/final_mixed.pth")
-    parser.add_argument("--output", default="models/crnn.onnx")
+    parser.add_argument("--checkpoint", default="models/ikaptcha.pth")
+    parser.add_argument("--output", default="models/ikaptcha.onnx")
     args = parser.parse_args()
 
     if not Path(args.checkpoint).exists():
