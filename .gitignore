@@ -6,8 +6,12 @@ __pycache__/
 venv/
 *.egg-info/
 
-# Synthetic training data — regenerate locally with `python generate_dataset.py`
-# (990 MB; not committed to keep the LFS footprint reasonable)
+# Training datasets — fetched via scripts/download_data.sh from the v1.0.0
+# release, not committed directly (too large, and LFS has bandwidth quotas).
+data/ikariam_pirate_captcha_dataset/
+data/dataset_pseudo_v2/
+
+# Synthetic training data — regenerate locally with `python scripts/generate_dataset.py`
 dataset_synthetic/
 
 # Demo output of `python generate_captcha.py`
