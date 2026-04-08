@@ -1,4 +1,4 @@
-# Ikariam Captcha Solver — Final Findings
+# iKaptcha — Final Findings
 
 ## Results
 
@@ -12,7 +12,7 @@
 
 All numbers are from the **final training epoch** (not cherry-picked best checkpoint). Last 10 epochs were stable at 96.7–97.3% on corrected val.
 
-## Architecture (`train_phased.py`)
+## Architecture (`ikaptcha/model.py`)
 
 CRNN (CNN + BiLSTM + CTC) with ~1.66M parameters:
 
@@ -38,7 +38,7 @@ Key design choices (verified empirically):
 
 ## Training Pipeline
 
-Two-phase training (`train_phased.py`), ~90 min total on single GPU:
+Two-phase training (`scripts/train.py`), ~90 min total on single GPU:
 
 1. **Pretrain on synthetic (50 epochs)**
    - 65k synthetic samples from `generate_captcha.py`
@@ -46,7 +46,7 @@ Two-phase training (`train_phased.py`), ~90 min total on single GPU:
    - Gets the model to 10-12% on real val (not useful alone, but establishes good features)
 
 2. **Mixed training (40 epochs)**
-   - 11,210 real + 65k synthetic with WeightedRandomSampler (3× real oversample)
+   - 11,210 real + ~65k synthetic with WeightedRandomSampler (3× real oversample)
    - OneCycleLR, max_lr=2e-4, 10% warmup, smooth cosine decay
    - NO warm restarts, NO SWA (both counterproductive with CTC)
    - Gradient clip norm 5.0, weight decay 1e-2
@@ -63,7 +63,7 @@ Augmentation: RandomAffine(±5°), ColorJitter, GaussianBlur(p=0.3), GaussianNoi
 | **Total real train** | **11,210** | |
 | YOLO val | 300 | Untouched for comparison vs YOLO baseline |
 | Corrected val | 298 | 7 labels corrected, 2 discarded (found via k-fold + review) |
-| Synthetic | 65,000 | From `generate_captcha.py`, 28-char charset |
+| Synthetic | ~65,000 | From `scripts/generate_captcha.py`, 28-char charset |
 
 **Captcha fetching**: Server rate-limits aggressively. Safe delay is 1.0–2.5s randomized. Fetching >1300 at <0.5s delay triggers IP block (~24h). Cookie is `ikariam=...`, from browser dev tools.
 
@@ -104,15 +104,16 @@ Model confidence on these is high (confidently wrong), suggesting they're either
 
 ## Production Model
 
-- **PyTorch**: `final_mixed.pth` — CRNN class in `train_phased.py` with `hidden_size=128`
-- **ONNX**: `crnn.onnx` — exported via `export_onnx.py`, 6.4 MB, opset 18
+- **PyTorch**: `models/final_mixed.pth` — CRNN class in `ikaptcha/model.py` with `hidden_size=128`
+- **ONNX**: `models/crnn.onnx` — exported via `scripts/export_onnx.py`, 6.4 MB, opset 18
 - **Input**: 48×256 RGB, normalized with mean/std [0.5, 0.5, 0.5]
 - **Output**: T=64 timesteps × 29 classes (greedy CTC decode)
-- **Inference**: `predict.py` (PyTorch) or `predict_onnx.py` (ONNX, no torch dep)
+- **Inference**: `scripts/predict.py` (PyTorch) or `scripts/predict_onnx.py` (ONNX, no torch dep)
+- **Runtime compatibility**: loads cleanly via `onnxruntime` and via OpenCV's `cv2.dnn` (≥4.8.0). Bit-exact predictions vs PyTorch on every val sample across all three backends.
 
 ### ONNX Export & Parity
 
-`export_onnx.py` exports `final_mixed.pth` to `crnn.onnx` and verifies prediction parity against PyTorch on both validation sets. Result on all 598 val samples: **0 string mismatches, identical 95.0% / 97.3% accuracy**.
+`scripts/export_onnx.py` exports `models/final_mixed.pth` to `models/crnn.onnx` and verifies prediction parity against PyTorch on both validation sets. Result on all validation samples: **0 string mismatches, identical 95.0% / 97.3% accuracy**.
 
 Two non-obvious export details (both handled in the script):
 1. The model's `AdaptiveAvgPool2d((1, None))` is rejected by the legacy ONNX exporter (output_size contains None). Swapped for a fixed `AvgPool2d((3, 1))` since H=3 at that stage — verified mathematically equivalent.
